@@ -128,10 +128,11 @@ itinerary_data = {
     }
 }
 
-# --- CSS 樣式與動態背景 ---
+# --- CSS 樣式與動態背景 (深色模式版) ---
 def set_bg(url):
     st.markdown(f"""
     <style>
+        /* 1. 設定背景圖片 */
         .stApp {{
             background-image: url("{url}");
             background-size: cover;
@@ -139,26 +140,40 @@ def set_bg(url):
             background-repeat: no-repeat;
             background-attachment: fixed;
         }}
-        /* 讓內容區域有玻璃擬態效果，增加文字可讀性 */
+        
+        /* 2. 全局文字顏色改為白色 */
+        .stApp, .stMarkdown, h1, h2, h3, h4, h5, h6, p, span, div {{
+            color: #FFFFFF !important;
+        }}
+        
+        /* 3. 深色毛玻璃容器 (讓文字浮在半透明黑底上) */
         .main .block-container {{
-            background-color: rgba(255, 255, 255, 0.85);
+            background-color: rgba(0, 0, 0, 0.65); /* 65% 透明度的黑色 */
             border-radius: 20px;
             padding: 2rem;
             margin-top: 2rem;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px); /* 模糊背景 */
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }}
         
-        /* 卡片樣式優化 */
+        /* 4. 行程卡片改為深灰色 */
         .travel-card {{
-            background-color: #FFFFFF;
+            background-color: rgba(60, 60, 60, 0.9); /* 深灰底色 */
             border-radius: 16px;
             padding: 18px;
             margin-bottom: 12px;
-            border-left: 5px solid #0984E3; /* 裝飾線 */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 5px solid #74b9ff; /* 亮藍色裝飾線 */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            color: #FFFFFF; /* 卡片內強制白字 */
         }}
         
+        /* 卡片內的標題顏色特別加亮 */
+        .travel-card .card-title {{
+            color: #ffffff !important;
+            font-weight: bold;
+        }}
+        
+        /* 5. 標籤樣式 (微調顏色以適應深色底) */
         .tag {{
             display: inline-block;
             padding: 3px 8px;
@@ -166,16 +181,21 @@ def set_bg(url):
             font-size: 12px;
             font-weight: 600;
             margin-right: 5px;
+            color: #2d3436 !important; /* 標籤內的字維持深色比較好讀 */
         }}
-        .tag-food {{ background-color: #ffeaa7; color: #d35400; }}
-        .tag-spot {{ background-color: #74b9ff; color: #0984e3; }}
-        .tag-buy {{ background-color: #ffcccc; color: #d63031; }}
-        .tag-transport {{ background-color: #dfe6e9; color: #2d3436; }}
-        .tag-stay {{ background-color: #a29bfe; color: #6c5ce7; }}
-
-        /* 隱藏預設的主選單漢堡按鈕，讓畫面更乾淨 */
+        .tag-food {{ background-color: #ffeaa7; }}
+        .tag-spot {{ background-color: #74b9ff; }}
+        .tag-buy {{ background-color: #ffcccc; }}
+        .tag-transport {{ background-color: #dfe6e9; }}
+        
+        /* 6. 隱藏不必要的 Streamlit 元素 */
         #MainMenu {{visibility: hidden;}}
         footer {{visibility: hidden;}}
+        
+        /* 7. 修正日期滑桿文字顏色 */
+        .stSlider label {{
+            color: white !important;
+        }}
         
     </style>
     """, unsafe_allow_html=True)
@@ -202,8 +222,6 @@ set_bg(bg_url)
 
 st.image("header.jpg", use_container_width=True) 
 
-
-st.title(f"📅 {date_labels[selected_date]} {current_city}")
 # 3. 顯示內容
 st.title(f"📅 {date_labels[selected_date]} {current_city}")
 
