@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 import plotly.express as px
 
 # --- 設定頁面資訊 ---
@@ -11,79 +11,32 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 客製化 CSS (極簡 iPhone 風格) ---
-st.markdown("""
-<style>
-    /* 全局字體與背景 */
-    .stApp {
-        background-color: #F2F2F7; /* iOS 淺灰色背景 */
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    
-    /* 卡片樣式 */
-    .travel-card {
-        background-color: #FFFFFF;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        border: 1px solid #E5E5EA;
-    }
-    
-    /* 標題樣式 */
-    .card-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #1C1C1E;
-        margin-bottom: 8px;
-    }
-    
-    .card-time {
-        font-size: 14px;
-        color: #8E8E93;
-        font-weight: 600;
-        margin-bottom: 8px;
-        display: block;
-    }
-    
-    /* 標籤樣式 */
-    .tag {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-right: 6px;
-        margin-top: 6px;
-    }
-    .tag-food { background-color: #FFE5E5; color: #D63031; }
-    .tag-spot { background-color: #E5F6FF; color: #0984E3; }
-    .tag-buy { background-color: #FFF4E5; color: #E17055; }
-    .tag-transport { background-color: #F0F2F5; color: #636E72; }
-    .tag-tips { background-color: #FFF9C4; color: #FBC02D; border: 1px solid #FBC02D; }
+# --- 資料準備 ---
+# 定義日期與城市的對應關係，用來切換背景
+date_city_map = {
+    "2025-12-23": "Vancouver",
+    "2025-12-24": "Whitehorse",
+    "2025-12-25": "Whitehorse",
+    "2025-12-26": "Whitehorse",
+    "2025-12-27": "Whitehorse", # 下午回溫哥華，但早上還在白馬，暫定白馬
+    "2025-12-28": "Vancouver",
+    "2025-12-29": "Vancouver",
+    "2025-12-30": "Vancouver",
+    "2025-12-31": "Vancouver",
+    "2026-01-01": "Vancouver",
+    "2026-01-02": "Richmond", # 算在大溫哥華區
+    "2026-01-03": "Vancouver"
+}
 
-    /* 重點亮顯 */
-    .highlight-text {
-        font-weight: bold;
-        color: #007AFF; /* iOS Blue */
-    }
+# 背景圖片連結 (可替換成你自己的圖檔路徑，如 "app/my_photo.jpg")
+backgrounds = {
+    "Vancouver": "https://images.unsplash.com/photo-1560275619-4662e36fa65c?q=80&w=2000&auto=format&fit=crop", # 溫哥華城市
+    "Richmond": "https://images.unsplash.com/photo-1560275619-4662e36fa65c?q=80&w=2000&auto=format&fit=crop",  # 共用溫哥華
+    "Whitehorse": "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=2000&auto=format&fit=crop", # 極光/雪地
+    "Default": "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2000&auto=format&fit=crop"
+}
 
-    /* 天氣 Widget */
-    .weather-widget {
-        background: linear-gradient(135deg, #74b9ff, #0984e3);
-        color: white;
-        padding: 15px;
-        border-radius: 16px;
-        margin-bottom: 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# --- 資料準備 (根據你的上傳檔案整合) ---
-# 這裡將檔案內容轉化為結構化數據
+# 詳細行程資料
 itinerary_data = {
     "2025-12-23": {
         "city": "Vancouver",
@@ -111,7 +64,7 @@ itinerary_data = {
     "2025-12-26": {
         "city": "Whitehorse",
         "events": [
-            {"time": "10:45", "title": "City Tour & Wildlife", "type": "spot", "desc": "野生動物保護區 & 溫泉 (Hot Springs)", "loc": "Yukon Wildlife Preserve", "tips": "必拍：雪地裡的動物"},
+            {"time": "10:45", "title": "City Tour & Wildlife", "type": "spot", "desc": "野生動物保護區 & 溫泉", "loc": "Yukon Wildlife Preserve", "tips": "必拍：雪地裡的動物"},
             {"time": "23:10", "title": "Aurora Viewing Tour (D3)", "type": "spot", "desc": "最後一晚極光", "loc": "Aurora Centre Whitehorse"}
         ]
     },
@@ -175,147 +128,157 @@ itinerary_data = {
     }
 }
 
-# --- 功能函數 ---
-
-def get_weather(city, date):
-    # 這裡未來可以接真實 API，目前做模擬顯示
-    if city == "Whitehorse":
-        return "❄️ -15°C | 降雪機率 40%"
-    return "🌧️ 6°C | 溫哥華冬季多雨"
-
-def google_maps_link(location):
-    base_url = "https://www.google.com/maps/search/?api=1&query="
-    return base_url + location.replace(" ", "+")
-
-# --- App 介面 ---
-
-# 底部導航模擬 (使用 Tabs)
-tab1, tab2, tab3 = st.tabs(["📅 行程", "🧳 資訊/工具", "💰 記帳"])
-
-# === Tab 1: 行程 ===
-with tab1:
-    # 日期選擇器
-    selected_date_obj = st.date_input(
-        "選擇日期",
-        min_value=datetime(2025, 12, 23),
-        max_value=datetime(2026, 1, 3),
-        value=datetime(2025, 12, 23)
-    )
-    selected_date = selected_date_obj.strftime("%Y-%m-%d")
-
-    if selected_date in itinerary_data:
-        day_data = itinerary_data[selected_date]
+# --- CSS 樣式與動態背景 ---
+def set_bg(url):
+    st.markdown(f"""
+    <style>
+        .stApp {{
+            background-image: url("{url}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        /* 讓內容區域有玻璃擬態效果，增加文字可讀性 */
+        .main .block-container {{
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }}
         
-        # 1. 天氣預報 Widget
-        st.markdown(f"""
-        <div class="weather-widget">
-            <div>
-                <h3 style="margin:0; color:white;">{day_data['city']}</h3>
-                <p style="margin:0; font-size:14px;">{selected_date}</p>
-            </div>
-            <div style="font-size: 20px; font-weight:bold;">
-                {get_weather(day_data['city'], selected_date)}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        /* 卡片樣式優化 */
+        .travel-card {{
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            border-left: 5px solid #0984E3; /* 裝飾線 */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }}
+        
+        .tag {{
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }}
+        .tag-food {{ background-color: #ffeaa7; color: #d35400; }}
+        .tag-spot {{ background-color: #74b9ff; color: #0984e3; }}
+        .tag-buy {{ background-color: #ffcccc; color: #d63031; }}
+        .tag-transport {{ background-color: #dfe6e9; color: #2d3436; }}
+        .tag-stay {{ background-color: #a29bfe; color: #6c5ce7; }}
 
-        # 2. 行程卡片
+        /* 隱藏預設的主選單漢堡按鈕，讓畫面更乾淨 */
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- App 主邏輯 ---
+
+# 1. 日期滑動選擇器
+# 製作日期列表
+date_list = list(itinerary_data.keys())
+# 將日期格式化為較好讀的字串 (e.g. "12/23") 供滑桿顯示
+date_labels = {d: d[5:].replace("-", "/") for d in date_list}
+
+# 使用 select_slider
+selected_date = st.select_slider(
+    "請滑動選擇日期 🗓️",
+    options=date_list,
+    format_func=lambda x: date_labels[x]
+)
+
+# 2. 根據日期設定背景
+current_city = date_city_map.get(selected_date, "Default")
+bg_url = backgrounds.get(current_city, backgrounds["Default"])
+set_bg(bg_url)
+
+# 3. 顯示內容
+st.title(f"📅 {date_labels[selected_date]} {current_city}")
+
+tab1, tab2, tab3 = st.tabs(["行程", "資訊", "記帳"])
+
+with tab1:
+    day_data = itinerary_data.get(selected_date)
+    if day_data:
+        # 天氣小卡
+        weather_icon = "❄️" if "Whitehorse" in current_city else "🌧️"
+        temp = "-15°C" if "Whitehorse" in current_city else "6°C"
+        st.info(f"{weather_icon} {current_city} 天氣預報: {temp}")
+
         for event in day_data['events']:
-            # 決定標籤顏色
-            tag_class = f"tag-{event['type']}"
-            tag_label = event['type'].upper()
+            # 準備 HTML 內容
+            tag_type = event.get('type', 'spot')
+            tips_html = ""
             
-            # 卡片 HTML
-            card_html = f"""
-            <div class="travel-card">
-                <span class="card-time">{event['time']}</span>
-                <div class="card-title">{event['title']}</div>
-                <div style="margin-bottom:8px;">
-                    <span class="tag {tag_class}">{tag_label}</span>
-                </div>
-                <div style="color: #4A4A4A; font-size: 15px; margin-bottom: 12px;">
-                    {event['desc']}
-                </div>
-            """
-            
-            # 如果有 Tips (導遊職責)
+            # 如果有 Tips，先組合成 HTML 字串
             if 'tips' in event:
-                card_html += f"""
-                <div style="background-color: #FFF9C4; padding: 8px; border-radius: 8px; font-size: 13px; color: #5D4037; margin-bottom:10px;">
+                tips_html = f"""
+                <div style="background-color: #FFF9C4; padding: 10px; border-radius: 8px; font-size: 14px; color: #5D4037; margin-top:8px; border: 1px dashed #FBC02D;">
                     💡 <b>小撇步：</b> {event['tips']}
                 </div>
                 """
             
-            card_html += "</div>"
+            # 完整的卡片 HTML
+            card_html = f"""
+            <div class="travel-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:bold; font-size:18px; color:#2d3436;">{event['title']}</span>
+                    <span style="font-size:14px; color:#636e72; font-family:monospace;">{event['time']}</span>
+                </div>
+                <div style="margin: 5px 0;">
+                    <span class="tag tag-{tag_type}">{tag_type.upper()}</span>
+                    <span style="font-size:14px; color:#636e72;">📍 {event['loc']}</span>
+                </div>
+                <div style="color: #4A4A4A; font-size: 15px; line-height:1.5;">
+                    {event['desc']}
+                </div>
+                {tips_html}
+            </div>
+            """
+            
+            # 重要：一定要用 unsafe_allow_html=True 渲染
             st.markdown(card_html, unsafe_allow_html=True)
             
-            # 導航按鈕 (Streamlit 原生按鈕以支援 Python 邏輯)
-            if st.button(f"📍 導航至 {event['title']}", key=event['title']):
-                st.link_button("開啟 Google Maps", google_maps_link(event['loc']))
-
+            # 導航按鈕 (Streamlit 原生按鈕無法放在 HTML 裡，所以分開寫)
+            if st.button(f"🗺️ 導航去: {event['title']}", key=event['title']):
+                st.link_button("開啟 Google Maps", f"https://www.google.com/maps/search/?api=1&query={event['loc']}")
     else:
-        st.info("今天沒有安排特定行程，好好休息！")
+        st.write("查無資料")
 
-# === Tab 2: 資訊與工具 ===
 with tab2:
-    st.markdown("### ✈️ 航班資訊")
-    st.info("**去程 (BR10):** 12/23 TPE 23:55 -> YVR 18:35")
-    st.info("**國內線 (AC):** 12/24 YVR 09:25 -> YXY 12:54")
-    st.info("**回程 (BR09):** 01/03 YVR 16:15 -> TPE 05:15(+1)")
-
-    st.markdown("---")
-    st.markdown("### 🏨 住宿")
-    st.write("📍 **Whitehorse:** Raven Inn")
-    st.write("📍 **Vancouver:** (填寫溫哥華住宿地址)")
-
-    st.markdown("---")
-    st.markdown("### 🛍️ 必買清單 Check")
-    checklist = {
-        "CK 內衣褲": False,
-        "Saje 精油 (腳底/耳後睡眠用)": False,
-        "楓糖漿 (給張憶庭)": False,
-        "Anto Yukon 香皂": False
-    }
+    st.markdown("### ✈️ 航班 & 住宿")
+    st.success("去程: BR10 | 回程: BR09")
+    st.info("住宿: Raven Inn (Whitehorse)")
     
-    for item, checked in checklist.items():
-        st.checkbox(item, value=checked)
+    st.markdown("### 🛍️ 購物清單")
+    st.checkbox("CK 內衣褲")
+    st.checkbox("Saje 精油")
+    st.checkbox("楓糖漿")
+    st.checkbox("Anto Yukon 香皂")
 
-# === Tab 3: 記帳分帳 ===
 with tab3:
-    st.markdown("### 💸 快速記帳")
-    
-    # 初始化 Session State
+    st.markdown("### 💸 記帳本")
     if 'expenses' not in st.session_state:
-        st.session_state.expenses = pd.DataFrame(columns=["日期", "項目", "金額", "分類", "付款人"])
-
-    with st.form("expense_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            ex_item = st.text_input("項目 (如: 晚餐)")
-            ex_amount = st.number_input("金額 (CAD)", min_value=0.0)
-        with col2:
-            ex_cat = st.selectbox("分類", ["食物", "交通", "購物", "娛樂", "住宿"])
-            ex_payer = st.selectbox("付款人", ["本人", "旅伴A", "旅伴B"]) # 可修改名字
+        st.session_state.expenses = pd.DataFrame(columns=["項目", "金額", "分類"])
+        
+    with st.form("accounting"):
+        item = st.text_input("項目")
+        cost = st.number_input("金額", min_value=0.0)
+        category = st.selectbox("分類", ["食", "衣", "住", "行", "樂"])
+        if st.form_submit_button("新增"):
+            new_data = pd.DataFrame({"項目": [item], "金額": [cost], "分類": [category]})
+            st.session_state.expenses = pd.concat([st.session_state.expenses, new_data], ignore_index=True)
+            st.rerun()
             
-        submitted = st.form_submit_button("➕ 新增支出")
-        
-        if submitted:
-            new_row = pd.DataFrame({
-                "日期": [datetime.now().strftime("%Y-%m-%d")],
-                "項目": [ex_item],
-                "金額": [ex_amount],
-                "分類": [ex_cat],
-                "付款人": [ex_payer]
-            })
-            st.session_state.expenses = pd.concat([st.session_state.expenses, new_row], ignore_index=True)
-            st.success("已儲存！")
-
-    # 顯示統計
     if not st.session_state.expenses.empty:
-        st.markdown("#### 支出明細")
         st.dataframe(st.session_state.expenses)
-        
-        st.markdown("#### 分類統計")
-        fig = px.pie(st.session_state.expenses, values='金額', names='分類', hole=0.4)
-        fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=250)
-        st.plotly_chart(fig, use_container_width=True)
+        fig = px.pie(st.session_state.expenses, values='金額', names='分類', title="花費比例")
+        st.plotly_chart(fig)
