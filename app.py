@@ -200,7 +200,7 @@ current_city = date_city_map.get(selected_date, "Default")
 bg_url = backgrounds.get(current_city, backgrounds["Default"])
 set_bg(bg_url)
 
-st.image("你的照片檔名.jpg", use_container_width=True) 
+st.image("header.jpg", use_container_width=True) 
 
 
 st.title(f"📅 {date_labels[selected_date]} {current_city}")
