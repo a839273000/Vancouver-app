@@ -33,9 +33,10 @@ date_city_map = {
     "2026-01-03": "Vancouver"
 }
 
-# 背景圖片連結 (已更新溫哥華為指標性臨海圖片)
+# 背景圖片連結
 backgrounds = {
-    # 替換成更有指標性的溫哥華臨海市景 (Canada Place/Coal Harbour area)
+    # 歡迎頁面用的飛機背景 (稍後在程式碼中單獨呼叫，這裡保留城市背景)
+    "Welcome": "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2000&auto=format&fit=crop", 
     "Vancouver": "https://images.unsplash.com/photo-1559511260-66a654ae982a?q=80&w=2000&auto=format&fit=crop", 
     "Richmond": "https://images.unsplash.com/photo-1559511260-66a654ae982a?q=80&w=2000&auto=format&fit=crop",
     "Whitehorse": "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=2000&auto=format&fit=crop",
@@ -134,7 +135,7 @@ itinerary_data = {
     }
 }
 
-# --- 3. CSS 樣式函數 (深色模式) ---
+# --- 3. CSS 樣式函數 (優化清晰度版) ---
 def set_bg(url):
     st.markdown(f"""
     <style>
@@ -145,41 +146,44 @@ def set_bg(url):
             background-repeat: no-repeat;
             background-attachment: fixed;
         }}
+        
+        /* 全局文字：強制純白並加上陰影，確保在任何背景都清楚 */
         .stApp, .stMarkdown, h1, h2, h3, h4, h5, h6, p, span, div {{
             color: #FFFFFF !important;
+            text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8); /* 增加文字陰影 */
         }}
-        /* 主內容容器 - 深色毛玻璃 */
+
+        /* 主內容容器 - 加深背景以提高對比度 */
         .main .block-container {{
-            background-color: rgba(0, 0, 0, 0.65);
+            background-color: rgba(0, 0, 0, 0.75); /* 提高不透明度至 75% */
             border-radius: 20px;
             padding: 2rem;
             margin-top: 2rem;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
         }}
-        /* 行程卡片 - 深灰色 */
+
+        /* 行程卡片 - 深色背景優化 */
         .travel-card {{
-            background-color: rgba(60, 60, 60, 0.9);
+            background-color: rgba(45, 52, 54, 0.95); /* 近乎不透明的深灰 */
             border-radius: 16px;
             padding: 18px;
             margin-bottom: 12px;
             border-left: 5px solid #74b9ff;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             color: #FFFFFF;
         }}
-        .travel-card .card-title {{
-            color: #ffffff !important;
-            font-weight: bold;
-        }}
-        /* 標籤樣式 */
+        
+        /* 標籤樣式 - 提高對比 */
         .tag {{
             display: inline-block;
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 700;
             margin-right: 5px;
-            color: #2d3436 !important;
+            color: #2d3436 !important; /* 標籤內文字維持深色 */
+            text-shadow: none !important; /* 標籤內不要陰影，保持乾淨 */
         }}
         .tag-food {{ background-color: #ffeaa7; }}
         .tag-spot {{ background-color: #74b9ff; }}
@@ -193,18 +197,22 @@ def set_bg(url):
         /* 歡迎頁面專用樣式 */
         .welcome-title {{
             text-align: center;
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             font-weight: 800;
             margin-top: 20px;
             margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.9); /* 更強的標題陰影 */
+            line-height: 1.2;
         }}
         .stButton button {{
             width: 100%;
             border-radius: 12px;
-            height: 50px;
-            font-size: 18px;
+            height: 55px;
+            font-size: 20px;
             font-weight: bold;
+            background-color: #0984e3;
+            color: white;
+            border: none;
         }}
     </style>
     """, unsafe_allow_html=True)
@@ -213,27 +221,23 @@ def set_bg(url):
 
 def show_welcome_page():
     """顯示歡迎首頁"""
-    # 這裡設定一個預設的漂亮背景，或者你可以用空白背景
-    set_bg("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=2000&auto=format&fit=crop")
+    # 設定飛機背景圖
+    set_bg(backgrounds["Welcome"])
     
-    # 顯示 header.jpg (請確保檔案在同目錄下)
-    # 這裡使用 columns 來稍微置中圖片
     col1, col2, col3 = st.columns([1, 8, 1])
     with col2:
         try:
-            st.image("header.jpg", use_container_width=True)
+            # 這裡圖片可以設定一點邊框讓它突顯出來
+            st.image("header.jpg", use_container_width=True) 
         except:
-            st.warning("請確認 header.jpg 已上傳至專案目錄")
+            st.warning("請確認 header.jpg 已上傳")
 
-    # 顯示大標題 (使用 HTML 置中)
+    # 顯示大標題
     st.markdown('<div class="welcome-title">Brian & Tanya\'s<br>trip to Vancouver 🇨🇦</div>', unsafe_allow_html=True)
     
-    # 進入按鈕
-    # 使用 columns 讓按鈕不要太寬
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("開始旅程 ✨"):
-            # 按下後切換狀態，並重新執行
+        if st.button("開始旅程 ✈️"):
             st.session_state['current_page'] = 'main'
             st.rerun()
 
@@ -269,30 +273,16 @@ def show_main_app():
 
             for event in day_data['events']:
                 tag_type = event.get('type', 'spot')
+                
+                # [關鍵修正]：移除 f-string 中的縮排，避免 Markdown 誤判為程式碼區塊
                 tips_html = ""
                 if 'tips' in event:
-                    tips_html = f"""
-                    <div style="background-color: rgba(255, 249, 196, 0.15); padding: 10px; border-radius: 8px; font-size: 14px; color: #ececec; margin-top:8px; border: 1px dashed #ffeaa7;">
-                        💡 <b>小撇步：</b> {event['tips']}
-                    </div>
-                    """
+                    # 注意：這裡的 HTML 緊貼左邊，沒有縮排
+                    tips_html = f"""<div style="background-color: rgba(255, 249, 196, 0.2); padding: 12px; border-radius: 8px; font-size: 14px; color: #fff; margin-top:10px; border: 1px dashed #ffeaa7;">💡 <b>小撇步：</b> {event['tips']}</div>"""
                 
-                card_html = f"""
-                <div class="travel-card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span class="card-title" style="font-size:18px;">{event['title']}</span>
-                        <span style="font-size:14px; color:#b2bec3; font-family:monospace;">{event['time']}</span>
-                    </div>
-                    <div style="margin: 5px 0;">
-                        <span class="tag tag-{tag_type}">{tag_type.upper()}</span>
-                        <span style="font-size:14px; color:#dfe6e9;">📍 {event['loc']}</span>
-                    </div>
-                    <div style="color: #ecf0f1; font-size: 15px; line-height:1.5;">
-                        {event['desc']}
-                    </div>
-                    {tips_html}
-                </div>
-                """
+                # 注意：card_html 內的字串也盡量緊貼，避免多餘空白
+                card_html = f"""<div class="travel-card"><div style="display:flex; justify-content:space-between; align-items:center;"><span class="card-title" style="font-size:18px;">{event['title']}</span><span style="font-size:14px; color:#bdc3c7; font-family:monospace;">{event['time']}</span></div><div style="margin: 6px 0;"><span class="tag tag-{tag_type}">{tag_type.upper()}</span><span style="font-size:14px; color:#ecf0f1;">📍 {event['loc']}</span></div><div style="color: #ecf0f1; font-size: 15px; line-height:1.6; margin-top:5px;">{event['desc']}</div>{tips_html}</div>"""
+                
                 st.markdown(card_html, unsafe_allow_html=True)
                 
                 if st.button(f"🗺️ 導航去: {event['title']}", key=event['title']):
@@ -327,6 +317,8 @@ def show_main_app():
         if not st.session_state.expenses.empty:
             st.dataframe(st.session_state.expenses)
             fig = px.pie(st.session_state.expenses, values='金額', names='分類', title="花費比例")
+            # 讓圖表的背景也透明化以適應深色模式
+            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font=dict(color='white'))
             st.plotly_chart(fig)
 
 # --- 5. 主程式執行邏輯 ---
